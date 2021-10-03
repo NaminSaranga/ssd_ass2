@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>OAuth 2.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="driveupload.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="driveupload.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body style="background-color:rgb(210, 185, 250);">
+
+    <div class="header" style="background-color:white;">
+      <a href="#default" class="logo">Droogle</a>
+      <div class="header-right">
+        <a href="http://localhost/droogle">Logout</a>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="wrapper" style="padding: 10px;">
+        <div class="container" style="background-color:white; padding: 10px;">
+          <div class="upload-container">
+          <center><img src="Drive.png" width="70" height="70" /></center>
+          <h5><center>Upload Files To Google Drive</center></h5>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-4">
+           <h6>File to upload</h6>
+            </div>
+
+            <div class="col-sm-8">
+              <input
+                class="btn btn-primary"
+                style="background-color:rgb(210, 185, 250);"
+                id="files"
+                type="file"
+                name="files[]"
+                multiple
+              />
+              <button class="btn btn-secondary" id="upload" style="background-color:#763FFF;">Upload</button>
+            </div>
+              
+          </div>
+              <div id="progress-wrp">
+                <div class="progress-bar" style="background-color:#763FFF;"></div>
+                <div class="status">0%</div>
+              </div>
+              <div id="result"></div>
+           
+          
+        
+      </div>
+    </div> 
+  </body>
+</html>
