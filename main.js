@@ -2,7 +2,7 @@ $(document).ready(function(){
 
     var clientId ="511933029907-vr4j464376rilgnq5jnaq6kbjfqf1ian.apps.googleusercontent.com" 
 
-    var redirect_uri="http://localhost/droogle/driveupload.html"
+    var redirect_uri="http://localhost/ssd_ass2/home.html"
 
     var scope="https://www.googleapis.com/auth/drive"
 
