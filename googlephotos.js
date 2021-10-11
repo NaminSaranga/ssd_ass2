@@ -3,7 +3,7 @@ $(document).ready(function(){
 
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const redirect_uri = "http://localhost/droogle/ssd_ass2-master/googlephotos.html";
+    const redirect_uri = "http://localhost/ssd_ass2/googlephotos.html";
     const client_secret = "xaKy9VgvI2qACvhwVdTIpz8K"; 
     const scope = "https://www.googleapis.com/auth/photoslibrary.appendonly";
     var access_token= "";
@@ -11,7 +11,6 @@ $(document).ready(function(){
 
     $.ajax({
         type: 'POST',
-        // url: "https://www.googleapis.com/oauth2/v4/token",
         url: "htpps://oauth2.googleapis.com/token",
         data: {code:code
             ,redirect_uri:redirect_uri,

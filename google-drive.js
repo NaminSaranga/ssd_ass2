@@ -1,0 +1,371 @@
+var SCOPES = ['https://www.googleapis.com/auth/drive','profile'];
+var CLIENT_ID = '511933029907-vr4j464376rilgnq5jnaq6kbjfqf1ian.apps.googleusercontent.com';
+var API_KEY = 'AIzaSyBsii0H0deln9_Nxrk1vlDgNqJjUJD1tjc';
+var FOLDER_NAME = "drive1";
+var FOLDER_ID = "root";
+var FOLDER_PERMISSION = true;
+var FOLDER_LEVEL = 0;
+var NO_OF_FILES = 1000;
+var DRIVE_FILES = [];
+var FILE_COUNTER = 0;
+var FOLDER_ARRAY = [];
+
+/******************** AUTHENTICATION ********************/
+
+ function handleClientLoad() {
+	// Load the API client and auth2 library
+	gapi.load('client:auth2', initClient);
+}
+
+//authorize apps
+ function initClient() {
+	gapi.client.init({
+		
+		clientId: CLIENT_ID,
+		scope: SCOPES.join(' ')
+	}).then(function () {
+	  gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+	  updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+	});
+}
+
+function updateSigninStatus(isSignedIn) {
+	if (isSignedIn) {
+		$("#drive-box").show();
+		$("#drive-box").css("display","inline-block");
+        $("#login-box").hide();
+        showLoading();
+        getDriveFiles();
+	} else {
+		$("#login-box").show();
+        $("#drive-box").hide();
+	}
+}
+
+function handleAuthClick(event) {
+	gapi.auth2.getAuthInstance().signIn();
+}
+
+function handleSignoutClick(event) {
+	if(confirm("Are you sure you want to logout?")){
+		gapi.auth2.getAuthInstance().signOut();
+	}
+}
+
+/******************** END AUTHENTICATION ********************/
+
+
+/******************** PAGE LOAD ********************/
+$(function(){
+	$("#button-reload").click(function () {
+        showLoading();
+        showStatus("Loading Google Drive files...");
+        getDriveFiles();
+    });
+	
+	$("#button-upload").click(function () {
+        $("#fUpload").click();
+    });
+	
+	 $("#fUpload").bind("change", function () {
+        var uploadObj = $("[id$=fUpload]");
+        showLoading();
+        showStatus("Uploading file in progress...");
+        var file = uploadObj.prop("files")[0];
+		var metadata = {
+			'title': file.name,
+			'description': "bytutorial.com File Upload",
+			'mimeType': file.type || 'application/octet-stream',
+			"parents": [{
+				"kind": "drive#file",
+				"id": FOLDER_ID
+			}]
+		};
+
+		if(file.size <= 0){
+			var emptyContent = " ";
+			file = new Blob([emptyContent], {type: file.type || 'application/octet-stream'});
+		}
+		
+		showProgressPercentage(0);
+
+    });
+	
+	
+	$(".btnClose, .imgClose").click(function () {
+        $("#transparent-wrapper").hide();
+        $(".float-box").hide();
+    });
+});
+
+/******************** END PAGE LOAD ********************/
+
+/******************** DRIVER API ********************/
+function getDriveFiles(){
+	showStatus("Loading Google Drive files...");
+    gapi.client.load('drive', 'v2', getFiles);
+}
+
+function getFiles(){
+	var query = "";
+	if (ifShowSharedFiles()) {
+		$(".button-opt").hide();
+		query = (FOLDER_ID == "root") ? "trashed=false and sharedWithMe" : "trashed=false and '" + FOLDER_ID + "' in parents";
+		if (FOLDER_ID != "root" && FOLDER_PERMISSION == "true") {
+			$(".button-opt").show();
+		}
+	}else{
+		$(".button-opt").show();
+		query = "trashed=false and '" + FOLDER_ID + "' in parents";
+	}
+    var request = gapi.client.drive.files.list({
+        'maxResults': NO_OF_FILES,
+        'q': query
+    });
+
+    request.execute(function (resp) {
+       if (!resp.error) {
+			showUserInfo();
+            DRIVE_FILES = resp.items;
+            buildFiles();
+       }else{
+            showErrorMessage("Error: " + resp.error.message);
+       }
+    });
+}
+
+function showUserInfo(){
+	var request = gapi.client.drive.about.get();
+    var obj = {};
+    request.execute(function(resp) { 
+       if (!resp.error) {
+			$("#drive-info").show();
+			$("#span-name").html(resp.name);
+			$("#span-totalQuota").html(formatBytes(resp.quotaBytesTotal));
+			$("#span-usedQuota").html(formatBytes(resp.quotaBytesUsed));
+       }else{
+            showErrorMessage("Error: " + resp.error.message);
+       }
+   });
+}
+
+function buildFiles(){
+	var fText = "";
+    if (DRIVE_FILES.length > 0) {
+        for (var i = 0; i < DRIVE_FILES.length; i++) {
+			DRIVE_FILES[i].textContentURL = "";
+			DRIVE_FILES[i].level = (parseInt(FOLDER_LEVEL) + 1).toString();
+			DRIVE_FILES[i].parentID = (DRIVE_FILES[i].parents.length > 0) ? DRIVE_FILES[i].parents[0].id : "";
+			DRIVE_FILES[i].thumbnailLink = DRIVE_FILES[i].thumbnailLink || '';
+			DRIVE_FILES[i].fileType =  (DRIVE_FILES[i].fileExtension == null) ? "folder" : "file";
+			DRIVE_FILES[i].permissionRole = DRIVE_FILES[i].userPermission.role;
+			DRIVE_FILES[i].hasPermission = (DRIVE_FILES[i].permissionRole == "owner" || DRIVE_FILES[i].permissionRole == "writer");
+			var textContentURL = '';
+			if(DRIVE_FILES[i]['exportLinks'] != null){
+				DRIVE_FILES[i].fileType = "file";
+				DRIVE_FILES[i].textContentURL = DRIVE_FILES[i]['exportLinks']['text/plain'];
+			}
+			var textTitle = (DRIVE_FILES[i].fileType != "file") ? "Browse " + DRIVE_FILES[i].title : DRIVE_FILES[i].title;
+
+            fText += "<div class='" + DRIVE_FILES[i].fileType + "-box'>";
+			if (DRIVE_FILES[i].fileType != "file") {
+				fText += "<div class='folder-icon' data-level='" + DRIVE_FILES[i].level + "' data-parent='" + DRIVE_FILES[i].parentID + "' data-size='" + DRIVE_FILES[i].fileSize + "' data-id='" + DRIVE_FILES[i].id + "' title='" + textTitle + "' data-name='" + DRIVE_FILES[i].title + "' data-has-permission='" +DRIVE_FILES[i].hasPermission + "'><div class='image-preview'><img src='images/folder.png'/></div></div>";
+			} else {
+				if (DRIVE_FILES[i].thumbnailLink) {
+					fText += "<div class='image-icon'><div class='image-preview'><a href='" + DRIVE_FILES[i].thumbnailLink.replace("s220", "s800") + "' data-lightbox='image-" + i + "'><img src='" + DRIVE_FILES[i].thumbnailLink + "'/></a></div></div>";
+				}else {
+					fText += "<div class='file-icon'><div class='image-preview'><img src='images/" + DRIVE_FILES[i].fileExtension + "-icon.png" + "'/></div></div>";
+				}
+			}
+			fText += "<div class='item-title'>" + DRIVE_FILES[i].title + "</div>";
+
+			//button actions
+			fText += "<div class='button-box'>";
+				if (DRIVE_FILES[i].fileType != "folder") {
+					fText += "<div class='button-download' title='Download' data-id='" + DRIVE_FILES[i].id + "' data-file-counter='" + i + "'></div>";
+				}
+				
+				if (DRIVE_FILES[i].textContentURL != null && DRIVE_FILES[i].textContentURL.length > 0) {
+					fText += "<div class='button-text' title='Get Text' data-id='" + DRIVE_FILES[i].id + "' data-file-counter='" + i + "'></div>";
+				}
+				
+				fText += "<div class='button-info' title='Info' data-id='" + DRIVE_FILES[i].id + "' data-file-counter='" + i + "'></div>";
+				
+				if (DRIVE_FILES[i].hasPermission) {
+					if (DRIVE_FILES[i].permissionRole == "owner") {
+						fText += "<div class='button-delete' title='Delete' data-id='" + DRIVE_FILES[i].id + "'></div>";
+					}else if(DRIVE_FILES[i].fileType != "folder"){
+						fText += "<div class='button-delete' title='Delete' data-id='" + DRIVE_FILES[i].id + "'></div>";
+					}
+				}
+				
+			fText += "</div>";
+			
+			//closing div    
+			fText += "</div>";
+        }
+    } else {
+        fText = 'No files found.';
+    }
+    hideStatus();
+    $("#drive-content").html(fText);
+    initDriveButtons();
+    hideLoading();
+}
+
+
+function initDriveButtons(){
+	
+	$(".button-info").unbind("click");
+    $(".button-info").click(function () {
+		FILE_COUNTER = $(this).attr("data-file-counter");
+        $("#transparent-wrapper").show();
+        $("#float-box-info").show();
+        if (DRIVE_FILES[FILE_COUNTER] != null) {
+            var createdDate = new Date(DRIVE_FILES[FILE_COUNTER].createdDate);
+            var modifiedDate = new Date(DRIVE_FILES[FILE_COUNTER].modifiedDate);
+            $("#spanCreatedDate").html(createdDate.toString("dddd, d MMMM yyyy h:mm:ss tt"));
+            $("#spanModifiedDate").html(modifiedDate.toString("dddd, d MMMM yyyy h:mm:ss tt"));
+            $("#spanOwner").html((DRIVE_FILES[FILE_COUNTER].owners[0].displayName.length > 0) ? DRIVE_FILES[FILE_COUNTER].owners[0].displayName : "");
+            $("#spanTitle").html(DRIVE_FILES[FILE_COUNTER].title);
+            $("#spanSize").html((DRIVE_FILES[FILE_COUNTER].fileSize == null) ? "N/A" : formatBytes(DRIVE_FILES[FILE_COUNTER].fileSize));
+            $("#spanExtension").html(DRIVE_FILES[FILE_COUNTER].fileExtension);
+        }
+    });
+	
+}
+
+
+//browse folder
+function browseFolder(obj) {
+    FOLDER_ID = $(obj).attr("data-id");
+    FOLDER_NAME = $(obj).attr("data-name");
+    FOLDER_LEVEL = parseInt($(obj).attr("data-level"));
+	FOLDER_PERMISSION = $(obj).attr("data-has-permission");
+
+    if (typeof FOLDER_NAME === "undefined") {
+        FOLDER_NAME = "";
+        FOLDER_ID = "root";
+        FOLDER_LEVEL = 0;
+		FOLDER_PERMISSION = true;
+        FOLDER_ARRAY = [];
+    } else {
+        if (FOLDER_LEVEL == FOLDER_ARRAY.length && FOLDER_LEVEL > 0) {
+            //do nothing
+        } else if (FOLDER_LEVEL < FOLDER_ARRAY.length) {
+            var tmpArray = cloneObject(FOLDER_ARRAY);
+            FOLDER_ARRAY = [];
+
+            for (var i = 0; i < tmpArray.length; i++) {
+                FOLDER_ARRAY.push(tmpArray[i]);
+                if (tmpArray[i].Level >= FOLDER_LEVEL) { break; }
+            }
+        } else {
+            var fd = {
+                Name: FOLDER_NAME,
+                ID: FOLDER_ID,
+                Level: FOLDER_LEVEL,
+				Permission: FOLDER_PERMISSION
+            }
+            FOLDER_ARRAY.push(fd);
+        }
+    }
+
+    var sbNav = "";
+    for (var i = 0; i < FOLDER_ARRAY.length; i++) {
+        sbNav +="<span class='breadcrumb-arrow'></span>";
+        sbNav +="<span class='folder-name'><a data-id='" + FOLDER_ARRAY[i].ID + "' data-level='" + FOLDER_ARRAY[i].Level + "' data-name='" + FOLDER_ARRAY[i].Name + "' data-has-permission='" + FOLDER_PERMISSION + "'>" + FOLDER_ARRAY[i].Name + "</a></span>";
+    }
+    $("#span-navigation").html(sbNav.toString());
+
+    showLoading();
+    showStatus("Loading Google Drive files...");
+    getDriveFiles();
+}
+
+//call back function for getting text
+function callBackGetText(response){
+    if(response == null){
+         showErrorMessage("Error getting text content.");
+    }else{
+        hideLoading();
+        hideStatus();
+        $("#transparent-wrapper").show();
+        $("#float-box-text").show();
+        $("#text-content").html(response.replace(/(\r\n|\n|\r)/gm, "<br>"));
+    }
+}
+
+//function to clone an object
+function cloneObject(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    var temp = obj.constructor(); 
+    for (var key in obj) {
+        temp[key] = cloneObject(obj[key]);
+    }
+    return temp;
+}
+
+//show whether the display mode is share files or not
+function ifShowSharedFiles() {
+    return ($("#button-share.flash").length > 0) ? true : false;
+}
+
+//function to return bytes into different string data format
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " Bytes";
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(3) + " KB";
+    else if (bytes < 1073741824) return (bytes / 1048576).toFixed(3) + " MB";
+    else return (bytes / 1073741824).toFixed(3) + " GB";
+};
+
+/******************** END DRIVER API ********************/
+
+
+
+/******************** NOTIFICATION ********************/
+function showLoading() {
+    if ($("#drive-box-loading").length === 0) {
+        $("#drive-box").prepend("<div id='drive-box-loading'></div>");
+    }
+    $("#drive-box-loading").html("<div id='loading-wrapper'><div id='loading'><img src='images/loading-bubble.gif'></div></div>");
+}
+
+function hideLoading() {
+    $("#drive-box-loading").html("");
+}
+
+//show status message
+function showStatus(text) {
+    $("#status-message").show();
+    $("#status-message").html(text);
+}
+
+function hideStatus() {
+    $("#status-message").hide();
+    $("#status-message").html("");
+}
+
+//show upload progress
+function showProgressPercentage(percentageValue) {
+    if ($("#upload-percentage").length == 0) {
+        $("#drive-box").prepend("<div id='upload-percentage' class='flash'></div>");
+    }
+    if (!$("#upload-percentage").is(":visible")) {
+        $("#upload-percentage").show(1000);
+    }
+    $("#upload-percentage").html(percentageValue.toString() + "%");
+}
+
+//show error message
+function showErrorMessage(errorMessage) {
+    $("#error-message").html(errorMessage);
+    $("#error-message").show(100);
+    setTimeout(function () {
+        $("#error-message").hide(100);
+    }, 3000);
+}
+
+/******************** END NOTIFICATION ********************/

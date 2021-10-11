@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Google Drive API Javascript tutorial</title>
+<link href="lightbox.css" rel="stylesheet" />
+<link href="google-drive.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+
+    <body style="background-color:rgb(210, 185, 250);"></body>
+
+    
+    <a class="btn btn-secondary" href="http://localhost/ssd_ass2/driveupload.html" style="background-color:#763FFF;">Back</a>
+
+<div id="transparent-wrapper"></div>
+<div id="login-box" class="hide">
+	<p>Please login on your google account.</p>
+	<button id="btnLogin" onclick="handleAuthClick()" class="button">Login</button>
+</div>
+
+<div id="drive-box" class="hide">
+	<div id="drive-breadcrumb">
+        <span class='breadcrumb-arrow'></span> <a data-id='root' data-level='0'><a href="">Home</a>
+        <span id="span-navigation"></span>
+    </div>
+	
+	
+	<div id="drive-menu">
+        <div id="button-reload" title="Refresh"></div>
+    </div>
+	<div id="drive-content"></div>
+	<div id="error-message" class="flash hidden"></div>
+	<div id="status-message" class="flash hidden"></div>
+</div>
+
+
+<div id="float-box-info" class="float-box">
+    <div class="info-form">
+        <div class="close-x"><img id="imgCloseInfo" class="imgClose" src="images/button_close.png" alt="close" /></div>
+        <h3 class="clear">File information</h3>
+        <table cellpadding="0" cellspacing="0" class="tbl-info">
+            <tr>
+                <td class="label">Created Date</td>
+                <td><span id="spanCreatedDate"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Modified Date</td>
+                <td><span id="spanModifiedDate"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Owner</td>
+                <td><span id="spanOwner"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Title</td>
+                <td><span id="spanTitle"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Size</td>
+                <td><span id="spanSize"></span></td>
+            </tr>
+            <tr>
+                <td class="label">Extension</td>
+                <td><span id="spanExtension"></span></td>
+            </tr>
+        </table>
+		<button id="btnCloseInfo" value="Close" class="button btnClose">Close</button>
+    </div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="date.js" type="text/javascript"></script>
+<script src="lightbox.min.js" type="text/javascript"></script>
+<script src="google-drive.js"></script>
+<script async defer src="https://apis.google.com/js/api.js" 
+      onload="this.onload=function(){};handleClientLoad()" 
+      onreadystatechange="if (this.readyState === 'complete') this.onload()">
+</script>
+
+
+</body>
+</html>
